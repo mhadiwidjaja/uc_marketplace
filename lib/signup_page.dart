@@ -1,0 +1,175 @@
+import 'package:flutter/material.dart';
+import 'login_page.dart'; // Import the Login Page so we can navigate to it
+
+class SignupPage extends StatefulWidget {
+  const SignupPage({super.key});
+
+  @override
+  State<SignupPage> createState() => _SignupPageState();
+}
+
+class _SignupPageState extends State<SignupPage> {
+  // Define the orange color from your design
+  final Color ucOrange = const Color(0xFFF39C12);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5), // Light grey background
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. The Orange Header
+            Container(
+              width: double.infinity,
+              height: 120, // Adjust height as needed
+              color: ucOrange,
+              alignment: Alignment.center,
+              child: const SafeArea(
+                child: Text(
+                  "UC Marketplace",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+
+            // 2. The Form Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Sign up",
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Username Input
+                  _buildLabel("Username"),
+                  _buildInputField("Mathew Fernando"),
+                  const SizedBox(height: 20),
+
+                  // Email Input
+                  _buildLabel("Email Address"),
+                  _buildInputField("NorthwestLake@gmail.com"),
+                  const SizedBox(height: 20),
+
+                  // Password Input
+                  _buildLabel("Password"),
+                  _buildInputField("****************", isPassword: true),
+                  
+                  const SizedBox(height: 10),
+
+                  // "Already have an account?" link (Updated with Navigation)
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to Login Page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                      );
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text(
+                          "Already have an account?",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 5),
+                        Icon(Icons.arrow_forward, size: 18, color: ucOrange),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Sign Up Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ucOrange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        // TODO: Add backend logic later
+                        print("Sign up pressed");
+                      },
+                      child: const Text(
+                        "Sign up",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper widget for the Input Labels (Username, Email, etc.)
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  // Helper widget for the Text Fields
+  Widget _buildInputField(String placeholder, {bool isPassword = false}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: TextField(
+        obscureText: isPassword,
+        decoration: InputDecoration(
+          hintText: placeholder,
+          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide.none, // Remove default underline
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+}
