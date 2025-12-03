@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'customer_service_page.dart'; // UPDATED Import
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -37,11 +38,23 @@ class HomePage extends StatelessWidget {
                 const SizedBox(width: 15),
                 const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 28),
                 const SizedBox(width: 15),
-                const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
+                
+                // Chat Icon -> Navigate to Customer Service
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CustomerServicePage()),
+                    );
+                  },
+                  child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
+                ),
               ],
             ),
           ),
 
+          // ... (Rest of the file remains exactly the same) ...
+          
           // 2. Categories Row
           Container(
             color: Colors.white,
@@ -68,11 +81,11 @@ class HomePage extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 0.75, // Adjusts height/width ratio
+                  childAspectRatio: 0.75,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),
-                itemCount: 6, // Dummy item count
+                itemCount: 6, 
                 itemBuilder: (context, index) {
                   return _buildProductCard();
                 },
@@ -84,7 +97,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Helper for Categories
   Widget _buildCategoryItem(String label, IconData icon, Color color) {
     return Column(
       children: [
@@ -106,7 +118,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Helper for Product Cards
   Widget _buildProductCard() {
     return Container(
       decoration: BoxDecoration(
@@ -116,7 +127,6 @@ class HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Dummy Image
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -125,7 +135,6 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
-          // Info
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(

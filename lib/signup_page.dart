@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart'; // Import the Login Page so we can navigate to it
+import 'login_page.dart';
+import 'main_screen.dart'; // Import MainScreen to navigate to Home
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -70,7 +71,7 @@ class _SignupPageState extends State<SignupPage> {
                   
                   const SizedBox(height: 10),
 
-                  // "Already have an account?" link (Updated with Navigation)
+                  // "Already have an account?" link
                   GestureDetector(
                     onTap: () {
                       // Navigate to Login Page
@@ -106,8 +107,11 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ),
                       onPressed: () {
-                        // TODO: Add backend logic later
-                        print("Sign up pressed");
+                        // Navigate to the Main Screen (Home) replacing the current route
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const MainScreen()),
+                        );
                       },
                       child: const Text(
                         "Sign up",

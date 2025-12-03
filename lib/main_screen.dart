@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'account_page.dart';
+import 'inbox_page.dart'; // Import the Inbox Page
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,11 +15,13 @@ class _MainScreenState extends State<MainScreen> {
   final Color ucOrange = const Color(0xFFF39C12);
 
   // The list of pages corresponding to the tabs
-  // We use placeholders for Sell and Inbox for now
   final List<Widget> _pages = [
     const HomePage(),
     const Scaffold(body: Center(child: Text("Sell Page - Coming Soon"))),
-    const Scaffold(body: Center(child: Text("Inbox Page - Coming Soon"))),
+    
+    // 3. Inbox Page (No back button because it's a main tab)
+    const InboxPage(showBackButton: false), 
+    
     const AccountPage(),
   ];
 
