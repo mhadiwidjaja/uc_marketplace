@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'customer_service_page.dart'; // For the chat icon
-import 'manage_order_page.dart';     // For the "Manage Orders" button
+import 'manage_order_page.dart'; // For the "Manage Orders" button
+import 'add_product_page.dart';
 
 class SellPage extends StatelessWidget {
   const SellPage({super.key});
@@ -11,15 +12,18 @@ class SellPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      
+
       // Floating Action Button (The big + button)
       floatingActionButton: SizedBox(
         width: 65,
         height: 65,
         child: FloatingActionButton(
           onPressed: () {
-            // Logic to add new item can go here
-            print("Add new item pressed");
+            // Navigate to Add Product Page
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddProductPage()),
+            );
           },
           backgroundColor: ucOrange,
           shape: const CircleBorder(),
@@ -27,12 +31,17 @@ class SellPage extends StatelessWidget {
           child: const Icon(Icons.add, color: Colors.white, size: 32),
         ),
       ),
-      
+
       body: Column(
         children: [
           // 1. Header with Search Bar
           Container(
-            padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 20),
+            padding: const EdgeInsets.only(
+              top: 50,
+              left: 20,
+              right: 20,
+              bottom: 20,
+            ),
             decoration: BoxDecoration(color: ucOrange),
             child: Row(
               children: [
@@ -59,10 +68,16 @@ class SellPage extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const CustomerServicePage()),
+                      MaterialPageRoute(
+                        builder: (context) => const CustomerServicePage(),
+                      ),
                     );
                   },
-                  child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.chat_bubble_outline,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ],
             ),
@@ -75,14 +90,26 @@ class SellPage extends StatelessWidget {
                 // 2. Dashboard Stats Row
                 Row(
                   children: [
-                    _buildStatCard("Goals", "0/3", const Color(0xFFD946EF)), // Purple
+                    _buildStatCard(
+                      "Goals",
+                      "0/3",
+                      const Color(0xFFD946EF),
+                    ), // Purple
                     const SizedBox(width: 10),
-                    _buildStatCard("Orders", "42", const Color(0xFF06B6D4)), // Cyan
+                    _buildStatCard(
+                      "Orders",
+                      "42",
+                      const Color(0xFF06B6D4),
+                    ), // Cyan
                     const SizedBox(width: 10),
-                    _buildStatCard("Revenue", "2.4jt", const Color(0xFF22C55E)), // Green
+                    _buildStatCard(
+                      "Revenue",
+                      "2.4jt",
+                      const Color(0xFF22C55E),
+                    ), // Green
                   ],
                 ),
-                
+
                 const SizedBox(height: 20),
 
                 // 3. Product List
@@ -90,9 +117,9 @@ class SellPage extends StatelessWidget {
                 _buildSellItemCard(context),
                 _buildSellItemCard(context),
                 _buildSellItemCard(context),
-                
+
                 // Add padding at bottom so FAB doesn't cover content
-                const SizedBox(height: 80), 
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -121,12 +148,20 @@ class SellPage extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 5),
             Text(
               value,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
             ),
           ],
         ),
@@ -166,7 +201,7 @@ class SellPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Details
               Expanded(
                 child: Column(
@@ -174,7 +209,10 @@ class SellPage extends StatelessWidget {
                   children: [
                     const Text(
                       "Item Name",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
@@ -182,17 +220,29 @@ class SellPage extends StatelessWidget {
                       style: TextStyle(fontSize: 12, color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Target Goal Row
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Target Goal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                        Text("67%", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          "Target Goal",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          "67%",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    
+
                     // Progress Bar
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
@@ -209,7 +259,7 @@ class SellPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -219,15 +269,22 @@ class SellPage extends StatelessWidget {
                     // Navigate to Manage Order Page
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ManageOrderPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const ManageOrderPage(),
+                      ),
                     );
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey.shade400),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     foregroundColor: Colors.black87,
                   ),
-                  child: const Text("Manage Orders", style: TextStyle(fontSize: 12)),
+                  child: const Text(
+                    "Manage Orders",
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -238,14 +295,19 @@ class SellPage extends StatelessWidget {
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey.shade400),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     foregroundColor: Colors.black87,
                   ),
-                  child: const Text("Edit Product", style: TextStyle(fontSize: 12)),
+                  child: const Text(
+                    "Edit Product",
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );

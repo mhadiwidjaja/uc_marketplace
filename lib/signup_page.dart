@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'main_screen.dart'; // Import MainScreen so we can go to Home
+import 'main_screen.dart'; // Make sure this import is here!
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -20,7 +20,7 @@ class _SignupPageState extends State<SignupPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Orange Header
+            // 1. The Orange Header
             Container(
               width: double.infinity,
               height: 120,
@@ -38,7 +38,7 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
 
-            // 2. Form Section
+            // 2. The Form Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
               child: Column(
@@ -67,9 +67,10 @@ class _SignupPageState extends State<SignupPage> {
                   
                   const SizedBox(height: 10),
 
-                  // "Already have an account?" -> Goes to Login Page
+                  // "Already have an account?" link
                   GestureDetector(
                     onTap: () {
+                      // Navigate to Login Page
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -102,7 +103,7 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ),
                       onPressed: () {
-                        // Use pushReplacement so user can't "back" into the signup page
+                        // Navigate to the Main Screen (Home)
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (context) => const MainScreen()),
@@ -132,7 +133,11 @@ class _SignupPageState extends State<SignupPage> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: Colors.black87,
+        ),
       ),
     );
   }
@@ -156,7 +161,10 @@ class _SignupPageState extends State<SignupPage> {
         decoration: InputDecoration(
           hintText: placeholder,
           hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide.none,
+          ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
