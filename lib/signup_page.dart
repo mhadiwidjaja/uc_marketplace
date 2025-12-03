@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'main_screen.dart'; // Import MainScreen to navigate to Home
+import 'main_screen.dart'; // Import MainScreen so we can go to Home
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -10,21 +10,20 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-  // Define the orange color from your design
   final Color ucOrange = const Color(0xFFF39C12);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Light grey background
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. The Orange Header
+            // 1. Orange Header
             Container(
               width: double.infinity,
-              height: 120, // Adjust height as needed
+              height: 120,
               color: ucOrange,
               alignment: Alignment.center,
               child: const SafeArea(
@@ -39,7 +38,7 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
 
-            // 2. The Form Section
+            // 2. Form Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
               child: Column(
@@ -55,26 +54,22 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Username Input
                   _buildLabel("Username"),
                   _buildInputField("Mathew Fernando"),
                   const SizedBox(height: 20),
 
-                  // Email Input
                   _buildLabel("Email Address"),
                   _buildInputField("NorthwestLake@gmail.com"),
                   const SizedBox(height: 20),
 
-                  // Password Input
                   _buildLabel("Password"),
                   _buildInputField("****************", isPassword: true),
                   
                   const SizedBox(height: 10),
 
-                  // "Already have an account?" link
+                  // "Already have an account?" -> Goes to Login Page
                   GestureDetector(
                     onTap: () {
-                      // Navigate to Login Page
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -95,7 +90,7 @@ class _SignupPageState extends State<SignupPage> {
 
                   const SizedBox(height: 30),
 
-                  // Sign Up Button
+                  // Sign Up Button -> Goes to Home (MainScreen)
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -107,7 +102,7 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ),
                       onPressed: () {
-                        // Navigate to the Main Screen (Home) replacing the current route
+                        // Use pushReplacement so user can't "back" into the signup page
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (context) => const MainScreen()),
@@ -132,22 +127,16 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  // Helper widget for the Input Labels (Username, Email, etc.)
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: Colors.black87,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
       ),
     );
   }
 
-  // Helper widget for the Text Fields
   Widget _buildInputField(String placeholder, {bool isPassword = false}) {
     return Container(
       decoration: BoxDecoration(
@@ -167,10 +156,7 @@ class _SignupPageState extends State<SignupPage> {
         decoration: InputDecoration(
           hintText: placeholder,
           hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none, // Remove default underline
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),

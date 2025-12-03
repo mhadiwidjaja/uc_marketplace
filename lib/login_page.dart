@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
-import 'main_screen.dart'; // Import this so we can navigate to the Home Page
+import 'main_screen.dart'; // Import MainScreen so we can go to Home
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
 
-            // 2. Login Form Section
+            // 2. Form Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
               child: Column(
@@ -54,18 +54,16 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Email Input
                   _buildLabel("Email Address"),
                   _buildInputField("NorthwestLake@gmail.com"),
                   const SizedBox(height: 20),
 
-                  // Password Input
                   _buildLabel("Password"),
                   _buildInputField("****************", isPassword: true),
                   
                   const SizedBox(height: 30),
 
-                  // Login Button
+                  // Login Button -> Goes to Home (MainScreen)
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -77,8 +75,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       onPressed: () {
-                        // This moves you to the Main Screen (Home)
-                        // pushReplacement prevents going back to login by pressing "Back"
+                        // Navigate to Home
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (context) => const MainScreen()),
@@ -97,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 20),
 
-                  // "Don't have an account?" link (Navigates to Signup)
+                  // "Don't have an account?" -> Goes to Signup Page
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -108,7 +105,6 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(width: 5),
                       GestureDetector(
                         onTap: () {
-                          // Navigate to Signup Page
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const SignupPage()),
@@ -116,10 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         child: Text(
                           "Sign up",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: ucOrange,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: ucOrange),
                         ),
                       ),
                     ],
@@ -133,18 +126,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // --- Helper Widgets ---
-
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: Colors.black87,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
       ),
     );
   }
@@ -168,10 +155,7 @@ class _LoginPageState extends State<LoginPage> {
         decoration: InputDecoration(
           hintText: placeholder,
           hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),

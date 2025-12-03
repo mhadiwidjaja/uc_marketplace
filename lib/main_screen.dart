@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'account_page.dart';
 import 'inbox_page.dart'; // Import the Inbox Page
+import 'sell_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -17,7 +18,7 @@ class _MainScreenState extends State<MainScreen> {
   // The list of pages corresponding to the tabs
   final List<Widget> _pages = [
     const HomePage(),
-    const Scaffold(body: Center(child: Text("Sell Page - Coming Soon"))),
+    const SellPage(),
     
     // 3. Inbox Page (No back button because it's a main tab)
     const InboxPage(showBackButton: false), 
