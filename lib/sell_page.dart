@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'customer_service_page.dart'; // Reuse the chat logic
+import 'customer_service_page.dart'; // For the chat icon
+import 'manage_order_page.dart';     // For the "Manage Orders" button
 
 class SellPage extends StatelessWidget {
   const SellPage({super.key});
@@ -17,7 +18,8 @@ class SellPage extends StatelessWidget {
         height: 65,
         child: FloatingActionButton(
           onPressed: () {
-            // Logic to add new item
+            // Logic to add new item can go here
+            print("Add new item pressed");
           },
           backgroundColor: ucOrange,
           shape: const CircleBorder(),
@@ -28,7 +30,7 @@ class SellPage extends StatelessWidget {
       
       body: Column(
         children: [
-          // 1. Header with Search Bar (Same style as Home)
+          // 1. Header with Search Bar
           Container(
             padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 20),
             decoration: BoxDecoration(color: ucOrange),
@@ -52,6 +54,7 @@ class SellPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 15),
+                // Chat Icon -> Navigate to Customer Service
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -83,9 +86,11 @@ class SellPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // 3. Product List
-                _buildSellItemCard(),
-                _buildSellItemCard(),
-                _buildSellItemCard(),
+                // We pass 'context' so the button inside can perform navigation
+                _buildSellItemCard(context),
+                _buildSellItemCard(context),
+                _buildSellItemCard(context),
+                
                 // Add padding at bottom so FAB doesn't cover content
                 const SizedBox(height: 80), 
               ],
@@ -130,7 +135,7 @@ class SellPage extends StatelessWidget {
   }
 
   // --- Helper: Item Card with Progress Bar ---
-  Widget _buildSellItemCard() {
+  Widget _buildSellItemCard(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -151,7 +156,7 @@ class SellPage extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Product Image
+              // Product Image Placeholder
               Container(
                 width: 80,
                 height: 80,
@@ -210,7 +215,13 @@ class SellPage extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // Navigate to Manage Order Page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ManageOrderPage()),
+                    );
+                  },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey.shade400),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -222,7 +233,9 @@ class SellPage extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    print("Edit Product Pressed");
+                  },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey.shade400),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'customer_service_page.dart'; // UPDATED Import
+import 'inbox_page.dart';
+import 'customer_service_page.dart';
+import 'cart_page.dart'; // NEW: Import the Cart Page
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -36,10 +38,21 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 15),
-                const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 28),
+                
+                // --- Shopping Cart Icon (Linked to CartPage) ---
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CartPage()),
+                    );
+                  },
+                  child: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 28),
+                ),
+                
                 const SizedBox(width: 15),
                 
-                // Chat Icon -> Navigate to Customer Service
+                // --- Chat Icon (Linked to CustomerServicePage) ---
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -53,8 +66,6 @@ class HomePage extends StatelessWidget {
             ),
           ),
 
-          // ... (Rest of the file remains exactly the same) ...
-          
           // 2. Categories Row
           Container(
             color: Colors.white,
@@ -81,11 +92,11 @@ class HomePage extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 0.75,
+                  childAspectRatio: 0.75, // Adjusts height/width ratio
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),
-                itemCount: 6, 
+                itemCount: 6, // Dummy item count
                 itemBuilder: (context, index) {
                   return _buildProductCard();
                 },
@@ -97,6 +108,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // Helper for Categories
   Widget _buildCategoryItem(String label, IconData icon, Color color) {
     return Column(
       children: [
@@ -118,6 +130,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // Helper for Product Cards
   Widget _buildProductCard() {
     return Container(
       decoration: BoxDecoration(
@@ -127,6 +140,7 @@ class HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Dummy Image
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -135,6 +149,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
+          // Info
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
