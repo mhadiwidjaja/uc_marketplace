@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart'; // Import this so we can navigate back
+import 'main_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -39,7 +40,10 @@ class _LoginPageState extends State<LoginPage> {
 
             // 2. Login Form Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 30.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -61,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Password Input
                   _buildLabel("Password"),
                   _buildInputField("****************", isPassword: true),
-                  
+
                   const SizedBox(height: 30),
 
                   // Login Button
@@ -76,7 +80,13 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       onPressed: () {
-                        print("Login pressed");
+                        // Navigate to the Main Screen (Home)
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MainScreen(),
+                          ),
+                        );
                       },
                       child: const Text(
                         "Login",
@@ -105,7 +115,9 @@ class _LoginPageState extends State<LoginPage> {
                           // Navigate to Signup Page
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const SignupPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const SignupPage(),
+                            ),
                           );
                         },
                         child: Text(
@@ -166,7 +178,10 @@ class _LoginPageState extends State<LoginPage> {
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );
