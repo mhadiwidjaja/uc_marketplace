@@ -34,7 +34,7 @@ class CategoryProductsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("${categoryName} Item X", style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text("$categoryName Item X", style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 const Row(
                   children: [

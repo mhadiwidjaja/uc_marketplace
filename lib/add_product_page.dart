@@ -16,7 +16,7 @@ class _AddProductPageState extends State<AddProductPage> {
   // ignore: unused_field
   String? _selectedCategory;
   // ignore: unused_field
-  String? _selectedStockStatus = 'In Stock';
+  final String? _selectedStockStatus = 'In Stock';
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +150,7 @@ class _AddProductPageState extends State<AddProductPage> {
               children: [
                 Switch(
                   value: _isUnlimitedStock,
-                  activeColor: ucOrange,
+                  activeThumbColor: ucOrange,
                   onChanged: (val) => setState(() => _isUnlimitedStock = val),
                 ),
                 const Text("Unlimited", style: TextStyle(fontWeight: FontWeight.w500)),

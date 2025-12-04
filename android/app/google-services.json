@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "208332829554",
+    "firebase_url": "https://uc-marketplace-a802c-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "uc-marketplace-a802c",
+    "storage_bucket": "uc-marketplace-a802c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:208332829554:android:41181595bee6aa197ba3eb",
+        "android_client_info": {
+          "package_name": "com.example.uc_marketplace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAltdn-Y0eXLuFf2QKDILvcq-EgFBJZfqo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
