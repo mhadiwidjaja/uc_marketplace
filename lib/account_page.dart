@@ -1,12 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'models/user_model.dart'; // Import Model User
 import 'login_page.dart';
-import 'my_orders_page.dart'; // Needed for navigation
+import 'my_orders_page.dart';
 import 'settings_page.dart';
 
-class AccountPage extends StatelessWidget {
+class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
+  @override
+  State<AccountPage> createState() => _AccountPageState();
+}
+
+class _AccountPageState extends State<AccountPage> {
   final Color ucOrange = const Color(0xFFF39C12);
+  
+  // Ambil user yang sedang login dari Firebase Auth
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+
+  // Fungsi untuk Logout secara aman
+  Future<void> _handleLogout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      // Navigasi ke LoginPage dan hapus semua tumpukan halaman sebelumnya
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,9 +39,6 @@ class AccountPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: ucOrange,
         elevation: 0,
-        // The leading back arrow is automatic if pushed, but since this is a tab,
-        // we might not want it or we might want to manually control it.
-        // For a main tab, we usually hide the back button:
         automaticallyImplyLeading: false,
         title: const Text(
           "Account",
@@ -27,39 +48,64 @@ class AccountPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 1. Profile Info Section
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                // Circular Avatar
-                CircleAvatar(
-                  radius: 35,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: const NetworkImage(
-                    "https://i.pravatar.cc/150?img=5",
-                  ), // Dummy online image
-                ),
-                const SizedBox(width: 20),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          // 1. Profile Info Section dengan StreamBuilder & Model
+          StreamBuilder(
+            // Mendengarkan perubahan data user spesifik berdasarkan UID
+            stream: FirebaseDatabase.instance.ref("users/${currentUser?.uid}").onValue,
+            builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+              // Default UI saat memuat atau jika data tidak ditemukan
+              String displayName = "Memuat...";
+              String displayEmail = currentUser?.email ?? "Email tidak tersedia";
+
+              if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+                // Konversi data mentah Firebase ke Map
+                final rawData = Map<dynamic, dynamic>.from(
+                  snapshot.data!.snapshot.value as Map
+                );
+                
+                // Gunakan Model untuk memproses data
+                UserModel userModel = UserModel.fromMap(rawData, currentUser!.uid);
+                displayName = userModel.username;
+              }
+
+              return Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(20),
+                child: Row(
                   children: [
-                    Text(
-                      "Matilda Brown",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    // Avatar Pengguna
+                    CircleAvatar(
+                      radius: 35,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage: const NetworkImage(
+                        "https://i.pravatar.cc/150?img=5", // Placeholder image
                       ),
                     ),
-                    Text(
-                      "matildabrown@mail.com",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    const SizedBox(width: 20),
+                    // Informasi Nama dan Email
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            displayEmail,
+                            style: const TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           const SizedBox(height: 15),
 
@@ -67,7 +113,7 @@ class AccountPage extends StatelessWidget {
           _buildMenuOption(
             context,
             "My orders",
-            "Already have 12 orders",
+            "Lihat riwayat belanja Anda",
             onTap: () {
               Navigator.push(
                 context,
@@ -78,7 +124,7 @@ class AccountPage extends StatelessWidget {
           _buildMenuOption(
             context,
             "Settings",
-            "Personal Settings",
+            "Atur profil dan preferensi",
             onTap: () {
               Navigator.push(
                 context,
@@ -87,23 +133,17 @@ class AccountPage extends StatelessWidget {
             },
           ),
 
-          const Spacer(), // Pushes Logout to bottom
+          const Spacer(), // Mendorong tombol logout ke bawah
+
           // 3. Logout Button
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: GestureDetector(
-              onTap: () {
-                // Return to Login Page and remove all previous routes
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-              },
+              onTap: _handleLogout,
               child: const Row(
                 children: [
                   Icon(Icons.logout, color: Colors.red),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Text(
                     "Logout",
                     style: TextStyle(
@@ -122,7 +162,7 @@ class AccountPage extends StatelessWidget {
     );
   }
 
-  // Updated Helper Widget to accept onTap
+  // Helper Widget untuk Item Menu
   Widget _buildMenuOption(
     BuildContext context,
     String title,
@@ -131,14 +171,14 @@ class AccountPage extends StatelessWidget {
   }) {
     return Container(
       color: Colors.white,
-      margin: const EdgeInsets.only(bottom: 1), // Tiny gap for separator effect
+      margin: const EdgeInsets.only(bottom: 1), // Garis pemisah tipis
       child: ListTile(
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
           subtitle,
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(Icons.chevron_right, size: 20),
         onTap: onTap,
       ),
     );

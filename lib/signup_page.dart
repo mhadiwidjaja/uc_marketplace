@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'models/user_model.dart'; // Pastikan import model ini benar
 import 'login_page.dart';
-import 'main_screen.dart'; // Make sure this import is here!
+import 'main_screen.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -11,6 +14,55 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final Color ucOrange = const Color(0xFFF39C12);
+  
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> _handleSignUp() async {
+    try {
+      if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _usernameController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Harap isi semua bidang")));
+        return;
+      }
+
+      // 1. Buat user di Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // 2. Siapkan data menggunakan Model
+      UserModel newUser = UserModel(
+        uid: userCredential.user!.uid,
+        username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
+      );
+
+      // 3. Simpan ke Realtime Database
+      DatabaseReference ref = FirebaseDatabase.instance.ref("users/${newUser.uid}");
+      await ref.set(newUser.toMap());
+
+      if (mounted) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainScreen()));
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Terjadi kesalahan";
+      if (e.code == 'email-already-in-use') message = "Email sudah digunakan.";
+      else if (e.code == 'weak-password') message = "Kata sandi terlalu lemah.";
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,107 +70,42 @@ class _SignupPageState extends State<SignupPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. The Orange Header
             Container(
-              width: double.infinity,
-              height: 120,
-              color: ucOrange,
-              alignment: Alignment.center,
-              child: const SafeArea(
-                child: Text(
-                  "UC Marketplace",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              width: double.infinity, height: 120, color: ucOrange, alignment: Alignment.center,
+              child: const SafeArea(child: Text("UC Marketplace", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))),
             ),
-
-            // 2. The Form Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Sign up",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  const Text("Sign up", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 30),
-
                   _buildLabel("Username"),
-                  _buildInputField("Mathew Fernando"),
+                  _buildInputField("Nama Lengkap", controller: _usernameController),
                   const SizedBox(height: 20),
-
                   _buildLabel("Email Address"),
-                  _buildInputField("NorthwestLake@gmail.com"),
+                  _buildInputField("email@gmail.com", controller: _emailController),
                   const SizedBox(height: 20),
-
                   _buildLabel("Password"),
-                  _buildInputField("****************", isPassword: true),
-                  
-                  const SizedBox(height: 10),
-
-                  // "Already have an account?" link
-                  GestureDetector(
-                    onTap: () {
-                      // Navigate to Login Page
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginPage()),
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const Text(
-                          "Already have an account?",
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(width: 5),
-                        Icon(Icons.arrow_forward, size: 18, color: ucOrange),
-                      ],
-                    ),
-                  ),
-
+                  _buildInputField("********", controller: _passwordController, isPassword: true),
                   const SizedBox(height: 30),
-
-                  // Sign Up Button -> Goes to Home (MainScreen)
                   SizedBox(
-                    width: double.infinity,
-                    height: 50,
+                    width: double.infinity, height: 50,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ucOrange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
-                        // Navigate to the Main Screen (Home)
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const MainScreen()),
-                        );
-                      },
-                      child: const Text(
-                        "Sign up",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      style: ElevatedButton.styleFrom(backgroundColor: ucOrange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      onPressed: _handleSignUp,
+                      child: const Text("Sign up", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage())),
+                      child: Text("Sudah punya akun? Login", style: TextStyle(color: ucOrange, fontWeight: FontWeight.bold)),
+                    ),
+                  )
                 ],
               ),
             ),
@@ -128,46 +115,12 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: Colors.black87,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputField(String placeholder, {bool isPassword = false}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: TextField(
-        obscureText: isPassword,
-        decoration: InputDecoration(
-          hintText: placeholder,
-          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-      ),
+  Widget _buildLabel(String text) => Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)));
+  
+  Widget _buildInputField(String placeholder, {required TextEditingController controller, bool isPassword = false}) {
+    return TextField(
+      controller: controller, obscureText: isPassword,
+      decoration: InputDecoration(hintText: placeholder, filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none)),
     );
   }
 }

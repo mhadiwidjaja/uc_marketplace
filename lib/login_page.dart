@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_page.dart';
-import 'main_screen.dart'; // Make sure this import is here!
+import 'main_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,115 +13,88 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final Color ucOrange = const Color(0xFFF39C12);
 
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> _handleLogin() async {
+    try {
+      if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Email dan Password tidak boleh kosong")),
+        );
+        return;
+      }
+
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Login gagal. Silakan coba lagi.";
+      if (e.code == 'user-not-found') message = "Pengguna tidak ditemukan.";
+      else if (e.code == 'wrong-password') message = "Kata sandi salah.";
+      else if (e.code == 'invalid-email') message = "Format email tidak valid.";
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Orange Header
             Container(
-              width: double.infinity,
-              height: 120,
-              color: ucOrange,
-              alignment: Alignment.center,
-              child: const SafeArea(
-                child: Text(
-                  "UC Marketplace",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              width: double.infinity, height: 120, color: ucOrange, alignment: Alignment.center,
+              child: const SafeArea(child: Text("UC Marketplace", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))),
             ),
-
-            // 2. Login Form Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Login",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  const Text("Login", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 30),
-
-                  // Email Input
                   _buildLabel("Email Address"),
-                  _buildInputField("NorthwestLake@gmail.com"),
+                  _buildInputField("email@student.uc.ac.id", controller: _emailController),
                   const SizedBox(height: 20),
-
-                  // Password Input
                   _buildLabel("Password"),
-                  _buildInputField("****************", isPassword: true),
-                  
+                  _buildInputField("********", controller: _passwordController, isPassword: true),
                   const SizedBox(height: 30),
-
-                  // Login Button -> Goes to Home (MainScreen)
                   SizedBox(
-                    width: double.infinity,
-                    height: 50,
+                    width: double.infinity, height: 50,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ucOrange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
-                        // Navigate to the Main Screen (Home)
-                        // pushReplacement prevents going back to login by pressing "Back"
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const MainScreen()),
-                        );
-                      },
-                      child: const Text(
-                        "Login",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      style: ElevatedButton.styleFrom(backgroundColor: ucOrange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      onPressed: _handleLogin,
+                      child: const Text("Login", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // "Don't have an account?" link (Navigates to Signup)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        "Don't have an account?",
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 5),
-                      GestureDetector(
-                        onTap: () {
-                          // Navigate to Signup Page
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const SignupPage()),
-                          );
-                        },
-                        child: Text(
-                          "Sign up",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: ucOrange,
-                          ),
-                        ),
+                      const Text("Don't have an account?"),
+                      TextButton(
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SignupPage())),
+                        child: Text("Sign up", style: TextStyle(color: ucOrange, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -133,47 +107,14 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // --- Helper Widgets ---
+  Widget _buildLabel(String text) => Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)));
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: Colors.black87,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputField(String placeholder, {bool isPassword = false}) {
+  Widget _buildInputField(String placeholder, {required TextEditingController controller, bool isPassword = false}) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
       child: TextField(
-        obscureText: isPassword,
-        decoration: InputDecoration(
-          hintText: placeholder,
-          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
+        controller: controller, obscureText: isPassword,
+        decoration: InputDecoration(hintText: placeholder, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)),
       ),
     );
   }
