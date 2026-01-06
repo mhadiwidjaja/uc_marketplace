@@ -4,8 +4,9 @@ class ProductModel {
   final String description;
   final String price;
   final String category;
-  final String sellerId; // Field untuk menyimpan ID pengguna
+  final String sellerId;
   final int stock;
+  final String? imageUrl; // Baris ini wajib ada
 
   ProductModel({
     this.id,
@@ -15,9 +16,9 @@ class ProductModel {
     required this.category,
     required this.sellerId,
     required this.stock,
+    this.imageUrl, // Baris ini wajib ada
   });
 
-  // Konversi ke Map untuk Firebase
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -26,19 +27,20 @@ class ProductModel {
       'category': category,
       'sellerId': sellerId,
       'stock': stock,
+      'imageUrl': imageUrl,
     };
   }
 
-  // Ambil dari Map Firebase
   factory ProductModel.fromMap(Map<dynamic, dynamic> map, String id) {
     return ProductModel(
       id: id,
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      price: map['price'] ?? '',
+      price: map['price']?.toString() ?? '0',
       category: map['category'] ?? '',
       sellerId: map['sellerId'] ?? '',
-      stock: map['stock'] ?? 0,
+      stock: (map['stock'] is int) ? map['stock'] : int.tryParse(map['stock']?.toString() ?? '0') ?? 0,
+      imageUrl: map['imageUrl'], // Baris ini wajib ada
     );
   }
 }

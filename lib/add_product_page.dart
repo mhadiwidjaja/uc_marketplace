@@ -1,10 +1,15 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart'; // Untuk kIsWeb
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'models/product_model.dart'; // Pastikan file model sudah benar
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'models/product_model.dart';
+import 'dart:html' as html; // Hanya untuk Web
 
 class AddProductPage extends StatefulWidget {
-  final ProductModel? productToEdit; // Parameter untuk mode Edit
+  final ProductModel? productToEdit;
   const AddProductPage({super.key, this.productToEdit});
 
   @override
@@ -13,99 +18,116 @@ class AddProductPage extends StatefulWidget {
 
 class _AddProductPageState extends State<AddProductPage> {
   final Color ucOrange = const Color(0xFFF39C12);
+  final _formKey = GlobalKey<FormState>();
   
-  // Controllers untuk mengambil input
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
   
-  // Form State Variables
   String? _taxIncluded = 'Yes';
-  bool _isUnlimitedStock = true;
-  String _selectedCategory = 'Electronics';
+  bool _isUnlimitedStock = false;
+  bool _isLoading = false;
+
+  // --- KATEGORI SESUAI HOME PAGE ---
+  String _selectedCategory = 'Goods';
+  final List<String> _categories = ["Goods", "Arts", "Fundraising", "Fashion", "F&B"];
+
+  // --- IMAGE UPLOAD VARIABLES ---
+  XFile? _pickedFile;
+  Uint8List? _webImageBytes;
+  String? _currentImageUrl;
 
   @override
   void initState() {
     super.initState();
-    // Jika dalam mode Edit, isi field dengan data lama dari Firebase
     if (widget.productToEdit != null) {
       _nameController.text = widget.productToEdit!.name;
       _descController.text = widget.productToEdit!.description;
       _priceController.text = widget.productToEdit!.price;
-      _stockController.text = widget.productToEdit!.stock == 999999 
-          ? "" 
-          : widget.productToEdit!.stock.toString();
+      _stockController.text = widget.productToEdit!.stock.toString();
       _selectedCategory = widget.productToEdit!.category;
-      _isUnlimitedStock = widget.productToEdit!.stock == 999999;
+      _currentImageUrl = widget.productToEdit!.imageUrl;
+      _isUnlimitedStock = widget.productToEdit!.stock >= 999999;
     }
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descController.dispose();
-    _priceController.dispose();
-    _stockController.dispose();
-    super.dispose();
+  Future<void> _pickImage() async {
+    if (kIsWeb) {
+      final html.FileUploadInputElement input = html.FileUploadInputElement()..accept = 'image/*';
+      input.click();
+      input.onChange.listen((event) {
+        final file = input.files!.first;
+        final reader = html.FileReader();
+        reader.readAsArrayBuffer(file);
+        reader.onLoadEnd.listen((event) {
+          setState(() {
+            _webImageBytes = reader.result as Uint8List;
+            _pickedFile = XFile(file.name);
+          });
+        });
+      });
+    } else {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 40);
+      if (image != null) setState(() => _pickedFile = image);
+    }
   }
 
-  // Fungsi Utama: Publish Baru atau Update Jualan
-  Future<void> _publishProduct() async {
+  Future<void> _handlePublish() async {
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Anda harus login terlebih dahulu!")),
-      );
-      return;
-    }
-
-    // Validasi Input Sederhana
     if (_nameController.text.isEmpty || _priceController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Nama dan Harga wajib diisi!")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Nama dan Harga wajib diisi!")));
       return;
     }
 
-    // Menyiapkan data produk berdasarkan model
-    final productData = ProductModel(
-      id: widget.productToEdit?.id, // Gunakan ID lama jika edit
-      name: _nameController.text.trim(),
-      description: _descController.text.trim(),
-      price: _priceController.text.trim(),
-      category: _selectedCategory,
-      sellerId: user.uid, // MENGHUBUNGKAN DENGAN USER ID
-      stock: _isUnlimitedStock ? 999999 : (int.tryParse(_stockController.text) ?? 0),
-    );
+    setState(() => _isLoading = true);
+    String? finalImageUrl = _currentImageUrl;
 
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref("products");
+      // 1. Upload Foto jika ada yang baru dipilih
+      if (_webImageBytes != null || _pickedFile != null) {
+        String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+        Reference ref = FirebaseStorage.instance.ref("products/$fileName.jpg");
+        
+        if (kIsWeb && _webImageBytes != null) {
+          await ref.putData(_webImageBytes!);
+        } else if (_pickedFile != null) {
+          await ref.putFile(File(_pickedFile!.path));
+        }
+        finalImageUrl = await ref.getDownloadURL();
+      }
 
+      // 2. Siapkan Model
+      final productData = ProductModel(
+        id: widget.productToEdit?.id,
+        name: _nameController.text.trim(),
+        description: _descController.text.trim(),
+        price: _priceController.text.trim(),
+        category: _selectedCategory,
+        sellerId: user.uid,
+        stock: _isUnlimitedStock ? 999999 : (int.tryParse(_stockController.text) ?? 0),
+        imageUrl: finalImageUrl,
+      );
+
+      // 3. Simpan ke Firebase
+      DatabaseReference dbRef = FirebaseDatabase.instance.ref("products");
       if (widget.productToEdit == null) {
-        // LOGIKA PUBLISH BARU: Gunakan push() untuk generate ID otomatis
-        await ref.push().set(productData.toMap());
+        await dbRef.push().set(productData.toMap());
       } else {
-        // LOGIKA UPDATE: Update data berdasarkan ID produk yang sudah ada
-        await ref.child(widget.productToEdit!.id!).update(productData.toMap());
+        await dbRef.child(widget.productToEdit!.id!).update(productData.toMap());
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.productToEdit == null 
-                ? "Produk berhasil dipublikasikan!" 
-                : "Produk berhasil diperbarui!"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context); // Kembali ke halaman sebelumnya
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Berhasil!"), backgroundColor: Colors.green));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Terjadi kesalahan: $e"), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -115,115 +137,99 @@ class _AddProductPageState extends State<AddProductPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: ucOrange,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          widget.productToEdit == null ? "Add Product" : "Edit Product",
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        title: Text(widget.productToEdit == null ? "Add Product" : "Edit Product", 
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: _isLoading 
+      ? Center(child: CircularProgressIndicator(color: ucOrange))
+      : SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionLabel("Product Name"),
-            _buildTextInput("Contoh: iPhone 15", _nameController),
-            const SizedBox(height: 16),
-
-            _buildSectionLabel("Product Description"),
-            _buildTextArea("Jelaskan detail produk Anda...", _descController),
-            const SizedBox(height: 24),
-
-            const Text("Pricing", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            
-            _buildSectionLabel("Product Price"),
-            _buildCurrencyInput("Contoh: 999.000", _priceController),
-            const SizedBox(height: 16),
-
-            _buildSectionLabel("Tax Included"),
-            Row(
-              children: [
-                Radio<String>(
-                  value: 'Yes',
-                  groupValue: _taxIncluded,
-                  activeColor: ucOrange,
-                  onChanged: (val) => setState(() => _taxIncluded = val),
-                ),
-                const Text("Yes"),
-                Radio<String>(
-                  value: 'No',
-                  groupValue: _taxIncluded,
-                  activeColor: ucOrange,
-                  onChanged: (val) => setState(() => _taxIncluded = val),
-                ),
-                const Text("No"),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            const Text("Inventory", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            
-            _buildSectionLabel("Stock Quantity"),
-            _buildTextInput(
-              _isUnlimitedStock ? "Unlimited" : "Masukkan jumlah stok", 
-              _stockController, 
-              enabled: !_isUnlimitedStock,
-              isNumber: true,
-            ),
-            
-            Row(
-              children: [
-                Switch(
-                  value: _isUnlimitedStock,
-                  activeThumbColor: ucOrange,
-                  activeColor: ucOrange.withOpacity(0.3),
-                  onChanged: (val) => setState(() => _isUnlimitedStock = val),
-                ),
-                const Text("Unlimited Stock", style: TextStyle(fontWeight: FontWeight.w500)),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            const Text("Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            _buildDropdown(["Electronics", "Fashion", "Food"], "Pilih Kategori"),
-            const SizedBox(height: 30),
-
-            // Tombol Publish / Update
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ucOrange,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: _publishProduct,
-                child: Text(
-                  widget.productToEdit == null ? "Publish Product" : "Update Product",
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            // --- UPLOAD PHOTO SECTION ---
+            _buildSectionLabel("Product Photo"),
+            Center(
+              child: GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  width: double.infinity,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: _buildImagePreview(),
                 ),
               ),
             ),
             const SizedBox(height: 20),
+
+            _buildSectionLabel("Product Name"),
+            _buildTextInput("iPhone 15", _nameController),
+            const SizedBox(height: 16),
+
+            _buildSectionLabel("Product Description"),
+            _buildTextArea("Jelaskan detail produk...", _descController),
+            const SizedBox(height: 24),
+
+            const Text("Pricing", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _buildCurrencyInput("999.000", _priceController),
+            
+            const SizedBox(height: 24),
+            const Text("Inventory", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _buildTextInput("Stock Quantity", _stockController, enabled: !_isUnlimitedStock, isNumber: true),
+            Row(
+              children: [
+                Switch(value: _isUnlimitedStock, activeColor: ucOrange, onChanged: (v) => setState(() => _isUnlimitedStock = v)),
+                const Text("Unlimited Stock"),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+            const Text("Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _buildDropdown(),
+
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: ucOrange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                onPressed: _handlePublish,
+                child: Text(widget.productToEdit == null ? "Publish Product" : "Update Product", 
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // --- Helper Widgets ---
+  // --- WIDGET HELPERS ---
 
-  Widget _buildSectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+  Widget _buildImagePreview() {
+    if (_webImageBytes != null) return ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(_webImageBytes!, fit: BoxFit.cover));
+    if (_pickedFile != null && !kIsWeb) return ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(_pickedFile!.path), fit: BoxFit.cover));
+    if (_currentImageUrl != null) return ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(_currentImageUrl!, fit: BoxFit.cover));
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.add_a_photo_outlined, size: 40, color: ucOrange),
+        const SizedBox(height: 8),
+        const Text("Tap to add photo", style: TextStyle(color: Colors.grey)),
+      ],
     );
   }
+
+  Widget _buildSectionLabel(String text) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)));
 
   Widget _buildTextInput(String hint, TextEditingController controller, {bool enabled = true, bool isNumber = false}) {
     return Container(
@@ -232,11 +238,7 @@ class _AddProductPageState extends State<AddProductPage> {
         controller: controller,
         enabled: enabled,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        decoration: InputDecoration(
-          hintText: hint,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
+        decoration: InputDecoration(hintText: hint, border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
       ),
     );
   }
@@ -244,18 +246,12 @@ class _AddProductPageState extends State<AddProductPage> {
   Widget _buildCurrencyInput(String hint, TextEditingController controller) {
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           const Text("Rp", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(hintText: hint, border: InputBorder.none),
-            ),
-          ),
+          Expanded(child: TextField(controller: controller, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: hint, border: InputBorder.none))),
         ],
       ),
     );
@@ -264,23 +260,19 @@ class _AddProductPageState extends State<AddProductPage> {
   Widget _buildTextArea(String hint, TextEditingController controller) {
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-      child: TextField(
-        controller: controller,
-        maxLines: 4,
-        decoration: InputDecoration(hintText: hint, border: InputBorder.none, contentPadding: const EdgeInsets.all(12)),
-      ),
+      child: TextField(controller: controller, maxLines: 3, decoration: InputDecoration(hintText: hint, border: InputBorder.none, contentPadding: const EdgeInsets.all(12))),
     );
   }
 
-  Widget _buildDropdown(List<String> items, String hint) {
+  Widget _buildDropdown() {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
       padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           isExpanded: true,
-          value: items.contains(_selectedCategory) ? _selectedCategory : items.first,
-          items: items.map((val) => DropdownMenuItem(value: val, child: Text(val))).toList(),
+          value: _selectedCategory,
+          items: _categories.map((val) => DropdownMenuItem(value: val, child: Text(val))).toList(),
           onChanged: (val) => setState(() => _selectedCategory = val!),
         ),
       ),

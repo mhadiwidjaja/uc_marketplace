@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'customer_service_page.dart'; // For the chat icon
+import 'chat.dart'; // For the chat icon
 import 'manage_order_page.dart'; // For the "Manage Orders" button
 import 'add_product_page.dart';
 
@@ -69,7 +69,7 @@ class SellPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const CustomerServicePage(),
+                        builder: (context) => const ChatPage(),
                       ),
                     );
                   },

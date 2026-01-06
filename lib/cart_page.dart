@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:uc_marketplace/checkout_page.dart';
 import 'models/cart_model.dart';
+// Import file checkout kamu nanti di sini:
+// import 'checkout_page.dart'; 
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -20,9 +23,10 @@ class _CartPageState extends State<CartPage> {
     return 'Rp ${str.replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 
-  int _parsePrice(String price) => int.parse(price.replaceAll('.', ''));
+  int _parsePrice(String price) {
+    return int.parse(price.replaceAll('.', '').replaceAll('Rp ', ''));
+  }
 
-  // Update Quantity dengan Pengecekan Stok Real-time
   Future<void> _updateQuantity(String productId, int newQuantity) async {
     if (currentUser == null) return;
     
@@ -34,7 +38,6 @@ class _CartPageState extends State<CartPage> {
       return;
     }
 
-    // Ambil stok terbaru dari database produk
     final stockSnapshot = await productRef.get();
     int availableStock = (stockSnapshot.value as int?) ?? 0;
 
@@ -46,42 +49,85 @@ class _CartPageState extends State<CartPage> {
       }
       return;
     }
-
     await cartRef.update({'quantity': newQuantity});
   }
 
   Widget _buildCartItem(CartItemModel item) {
-    return Dismissible(
-      key: ValueKey(item.productId),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => FirebaseDatabase.instance.ref("carts/${currentUser!.uid}/${item.productId}").remove(),
-      background: Container(alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), color: Colors.red, child: const Icon(Icons.delete, color: Colors.white)),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-        child: Row(
-          children: [
-            Container(width: 60, height: 60, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.shopping_bag, color: Colors.grey)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text(_formatCurrency(_parsePrice(item.price)), style: TextStyle(color: ucOrange, fontWeight: FontWeight.bold)),
-                ],
-              ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Gambar Produk (Placeholder sesuai desain)
+          Container(
+            width: 85,
+            height: 85,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
             ),
-            Row(
+            child: const Icon(Icons.smartphone, size: 40, color: Colors.grey),
+          ),
+          const SizedBox(width: 15),
+          // Info Produk
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(icon: const Icon(Icons.remove_circle_outline, size: 20), onPressed: () => _updateQuantity(item.productId, item.quantity - 1)),
-                Text(item.quantity.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
-                IconButton(icon: const Icon(Icons.add_circle_outline, size: 20), color: ucOrange, onPressed: () => _updateQuantity(item.productId, item.quantity + 1)),
+                Text(
+                  item.productName,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Type: ProMax\nColor: Gray", // Hardcoded sesuai desain gambar
+                  style: TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatCurrency(_parsePrice(item.price)),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+          // Plus Minus Quantity
+          Row(
+            children: [
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(Icons.remove_circle_outline, color: Colors.grey),
+                onPressed: () => _updateQuantity(item.productId, item.quantity - 1),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  item.quantity.toString(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(Icons.add_circle_outline, color: ucOrange),
+                onPressed: () => _updateQuantity(item.productId, item.quantity + 1),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -91,8 +137,20 @@ class _CartPageState extends State<CartPage> {
     if (currentUser == null) return const Scaffold(body: Center(child: Text("Silakan login")));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(backgroundColor: ucOrange, elevation: 0, centerTitle: true, iconTheme: const IconThemeData(color: Colors.white), title: const Text("My Cart", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+      backgroundColor: const Color(0xFFF9F9F9),
+      appBar: AppBar(
+        backgroundColor: ucOrange,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "My Cart",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
       body: StreamBuilder(
         stream: FirebaseDatabase.instance.ref("carts/${currentUser!.uid}").onValue,
         builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
@@ -110,8 +168,14 @@ class _CartPageState extends State<CartPage> {
 
           return Column(
             children: [
-              Expanded(child: ListView.builder(padding: const EdgeInsets.all(16), itemCount: cartList.length, itemBuilder: (context, index) => _buildCartItem(cartList[index]))),
-              _buildCheckoutBar(total, cartList.length),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: cartList.length,
+                  itemBuilder: (context, index) => _buildCartItem(cartList[index]),
+                ),
+              ),
+              _buildCheckoutBar(total),
             ],
           );
         },
@@ -120,16 +184,63 @@ class _CartPageState extends State<CartPage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.shopping_cart_outlined, size: 100, color: Color(0xFF5A6B7C)), const SizedBox(height: 30), const Text("Your Cart Is Empty!", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))]));
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text("Your Cart Is Empty!", 
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+        ],
+      ),
+    );
   }
 
-  Widget _buildCheckoutBar(int total, int itemCount) {
+  Widget _buildCheckoutBar(int total) {
     return Container(
-      padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 2, blurRadius: 5, offset: const Offset(0, -3))]),
-      child: SafeArea(child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("Total Belanja:", style: TextStyle(fontSize: 12, color: Colors.grey)), Text(_formatCurrency(total), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
-        SizedBox(height: 45, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: ucOrange), onPressed: () {}, child: Text("Checkout ($itemCount)", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
-      ])),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5)),
+        ],
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Total amount:", style: TextStyle(color: Colors.grey)),
+                Text(_formatCurrency(total), 
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ucOrange,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+               onPressed: () {
+  Navigator.push(context, MaterialPageRoute(builder: (context) => const CheckoutPage()));
+},
+                child: const Text(
+                  "Check Out",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
