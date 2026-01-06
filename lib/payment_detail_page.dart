@@ -8,13 +8,15 @@ import 'models/cart_model.dart'; // Pastikan import model cart Anda
 class PaymentDetailPage extends StatelessWidget {
   final String method;
   final int totalAmount;
-  final Map<String, List<CartItemModel>> groupedItems; // Menerima data yang sudah dikelompokkan per Seller
+  final Map<String, List<CartItemModel>> groupedItems;
+  final String? pickupAddress;
 
   const PaymentDetailPage({
     super.key,
     required this.method,
     required this.totalAmount,
     required this.groupedItems,
+    this.pickupAddress,
   });
 
   // Fungsi helper format mata uang agar konsisten
@@ -48,18 +50,32 @@ class PaymentDetailPage extends StatelessWidget {
 
           // 1. SIMPAN DATA KE NODE 'orders' SECARA TERPISAH PER SELLER
           DatabaseReference orderRef = FirebaseDatabase.instance.ref("orders").push();
+          
+          // Persiapkan data items untuk disimpan
+          List<Map<String, dynamic>> itemsData = items.map((item) {
+             int priceInt = int.parse(item.price.replaceAll(RegExp(r'[^0-9]'), ''));
+             return {
+               'productId': item.productId,
+               'productName': item.productName,
+               'quantity': item.quantity,
+               'price': priceInt,
+             };
+          }).toList();
+
           await orderRef.set({
             'orderId': orderRef.key,
             'buyerId': user.uid,
-            'sellerId': sellerId, // ID Penjual dipisahkan agar muncul berbeda di Inbox
-            'status': 'Pending', // Status default warna kuning
+            'sellerId': sellerId,
+            'status': 'Pending',
+            'receiveStatus': 'Pending',
             'totalHarga': _formatCurrency(totalPerSeller),
             'paymentMethod': method,
-            // Ringkasan nama barang untuk seller ini (Contoh: "Barang A (+2 lainnya)")
             'productSummary': items.first.productName +
                 (items.length > 1 ? " (+${items.length - 1} lainnya)" : ""),
             'timestamp': DateTime.now().millisecondsSinceEpoch,
-            'isRead': false, // Memicu notifikasi badge merah di navbar
+            'isRead': false,
+            'items': itemsData,
+            'pickupAddress': pickupAddress ?? 'Uc Walk',
           });
         }
 
@@ -82,6 +98,7 @@ class PaymentDetailPage extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
         content: const Text(
@@ -115,6 +132,7 @@ class PaymentDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFFF39C12),
         title: const Text("Instruksi Pembayaran",

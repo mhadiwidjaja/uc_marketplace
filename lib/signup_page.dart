@@ -71,8 +71,9 @@ class _SignupPageState extends State<SignupPage> {
       }
     } on FirebaseAuthException catch (e) {
       String message = "Terjadi kesalahan";
-      if (e.code == 'email-already-in-use') message = "Email sudah digunakan.";
-      else if (e.code == 'weak-password') message = "Kata sandi terlalu lemah.";
+      if (e.code == 'email-already-in-use') {
+        message = "Email sudah digunakan.";
+      } else if (e.code == 'weak-password') message = "Kata sandi terlalu lemah.";
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -108,19 +109,19 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 30),
                   
                   _buildLabel("Username"),
-                  _buildInputField("Nama Lengkap", controller: _usernameController),
+                  _buildInputField("Nama Lengkap", controller: _usernameController, autofillHints: const [AutofillHints.username, AutofillHints.name]),
                   const SizedBox(height: 20),
                   
                   _buildLabel("Phone Number"), // Field Baru
-                  _buildInputField("08xxxxxxxxxx", controller: _phoneController, keyboardType: TextInputType.phone),
+                  _buildInputField("08xxxxxxxxxx", controller: _phoneController, keyboardType: TextInputType.phone, autofillHints: const [AutofillHints.telephoneNumber]),
                   const SizedBox(height: 20),
                   
                   _buildLabel("Email Address"),
-                  _buildInputField("email@gmail.com", controller: _emailController, keyboardType: TextInputType.emailAddress),
+                  _buildInputField("email@gmail.com", controller: _emailController, keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email]),
                   const SizedBox(height: 20),
                   
                   _buildLabel("Password"),
-                  _buildInputField("********", controller: _passwordController, isPassword: true),
+                  _buildInputField("********", controller: _passwordController, isPassword: true, autofillHints: const [AutofillHints.newPassword]),
                   
                   const SizedBox(height: 30),
                   SizedBox(
@@ -132,11 +133,20 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Center(
-                    child: TextButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage())),
-                      child: Text("Sudah punya akun? Login", style: TextStyle(color: ucOrange, fontWeight: FontWeight.bold)),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Sudah punya akun? "),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage())),
+                        child: Text("Login", style: TextStyle(color: ucOrange, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   )
                 ],
               ),
@@ -149,11 +159,12 @@ class _SignupPageState extends State<SignupPage> {
 
   Widget _buildLabel(String text) => Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)));
   
-  Widget _buildInputField(String placeholder, {required TextEditingController controller, bool isPassword = false, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildInputField(String placeholder, {required TextEditingController controller, bool isPassword = false, TextInputType keyboardType = TextInputType.text, List<String>? autofillHints}) {
     return TextField(
       controller: controller, 
       obscureText: isPassword,
       keyboardType: keyboardType,
+      autofillHints: autofillHints,
       decoration: InputDecoration(
         hintText: placeholder, 
         filled: true, 

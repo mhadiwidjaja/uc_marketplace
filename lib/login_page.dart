@@ -38,8 +38,9 @@ class _LoginPageState extends State<LoginPage> {
       }
     } on FirebaseAuthException catch (e) {
       String message = "Login gagal. Silakan coba lagi.";
-      if (e.code == 'user-not-found') message = "Pengguna tidak ditemukan.";
-      else if (e.code == 'wrong-password') message = "Kata sandi salah.";
+      if (e.code == 'user-not-found') {
+        message = "Pengguna tidak ditemukan.";
+      } else if (e.code == 'wrong-password') message = "Kata sandi salah.";
       else if (e.code == 'invalid-email') message = "Format email tidak valid.";
       
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -74,10 +75,10 @@ class _LoginPageState extends State<LoginPage> {
                   const Text("Login", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 30),
                   _buildLabel("Email Address"),
-                  _buildInputField("email@student.uc.ac.id", controller: _emailController),
+                  _buildInputField("email@student.uc.ac.id", controller: _emailController, autofillHints: const [AutofillHints.email]),
                   const SizedBox(height: 20),
                   _buildLabel("Password"),
-                  _buildInputField("********", controller: _passwordController, isPassword: true),
+                  _buildInputField("********", controller: _passwordController, isPassword: true, autofillHints: const [AutofillHints.password]),
                   const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity, height: 50,
@@ -109,11 +110,13 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildLabel(String text) => Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)));
 
-  Widget _buildInputField(String placeholder, {required TextEditingController controller, bool isPassword = false}) {
+  Widget _buildInputField(String placeholder, {required TextEditingController controller, bool isPassword = false, List<String>? autofillHints}) {
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
       child: TextField(
-        controller: controller, obscureText: isPassword,
+        controller: controller, 
+        obscureText: isPassword,
+        autofillHints: autofillHints,
         decoration: InputDecoration(hintText: placeholder, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)),
       ),
     );

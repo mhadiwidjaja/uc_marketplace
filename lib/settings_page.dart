@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart'; 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -92,16 +93,18 @@ class _SettingsPageState extends State<SettingsPage> {
     String? imageUrl = _currentImageUrl;
 
     try {
-      // Proses Upload ke Firebase Storage
+      // Proses Upload - use base64 for web to avoid CORS
       if (_webImage != null || _pickedFile != null) {
-        Reference ref = FirebaseStorage.instance.ref("profile_pics/${currentUser!.uid}.jpg");
-        
         if (kIsWeb && _webImage != null) {
-          await ref.putData(_webImage!);
+          // For web: Store image as base64 data URL to avoid CORS issues
+          String base64Image = base64Encode(_webImage!);
+          imageUrl = 'data:image/jpeg;base64,$base64Image';
         } else if (_pickedFile != null) {
+          // For mobile: Use Firebase Storage
+          Reference ref = FirebaseStorage.instance.ref("profile_pics/${currentUser!.uid}.jpg");
           await ref.putFile(File(_pickedFile!.path));
+          imageUrl = await ref.getDownloadURL();
         }
-        imageUrl = await ref.getDownloadURL();
       }
 
       // Update data di Realtime Database

@@ -4,8 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'models/product_model.dart';
 import 'models/cart_model.dart';
+import 'models/review_model.dart';
 import 'add_product_page.dart';
 import 'chat_room_page.dart'; // Import halaman chat
+import 'write_review_page.dart';
+
 
 class ProductDetailPage extends StatelessWidget {
   final ProductModel product;
@@ -122,6 +125,7 @@ class ProductDetailPage extends StatelessWidget {
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         title: const Text("Hapus Produk"),
         content: const Text("Tindakan ini permanen. Hapus produk ini?"),
         actions: [
@@ -195,6 +199,34 @@ class ProductDetailPage extends StatelessWidget {
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: ucOrange)),
                   const SizedBox(height: 10),
                   Text(product.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
+                  
+                  const SizedBox(height: 8),
+                  StreamBuilder(
+                    stream: FirebaseDatabase.instance.ref("products/${product.id}").onValue,
+                    builder: (context, snapshot) {
+                        double rating = product.rating;
+                        int reviewCount = product.reviewCount;
+                        
+                        if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+                            try {
+                                final minMap = snapshot.data!.snapshot.value as Map;
+                                rating = ((minMap['rating'] ?? 0) as num).toDouble();
+                                reviewCount = (minMap['reviewCount'] ?? 0) as int;
+                            } catch (e) { /* ignore */ }
+                        }
+                        
+                        return Row(
+                           children: [
+                              Icon(Icons.star, color: ucOrange, size: 20),
+                              const SizedBox(width: 4),
+                              Text(rating.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                              const SizedBox(width: 8),
+                              Text("- $reviewCount Reviews", style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                           ],
+                        );
+                    }
+                  ),
+
                   const SizedBox(height: 20),
                   const Divider(),
                   
@@ -244,6 +276,9 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 20),
                   _buildInfoBox("Kategori", product.category),
                   _buildInfoBox("Stok", product.stock >= 999999 ? "Unlimited" : "${product.stock} pcs"),
+                  
+                  // REVIEW SECTION
+                  _buildReviewsSection(context),
                 ],
               ),
             ),
@@ -285,5 +320,221 @@ class ProductDetailPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildReviewsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 30),
+        const Divider(),
+        const Text("Customer reviews", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        
+        StreamBuilder(
+          stream: FirebaseDatabase.instance.ref("reviews/${product.id}").onValue,
+          builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+            }
+
+            List<ReviewModel> reviews = [];
+            if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+               final data = snapshot.data!.snapshot.value;
+               if (data is Map) {
+                 data.forEach((key, value) {
+                   reviews.add(ReviewModel.fromMap(value, key.toString()));
+                 });
+               } else if (data is List) {
+                  // Handle potential list structure if keys are integers
+                  for(var i=0; i<data.length; i++) {
+                     if (data[i] != null) reviews.add(ReviewModel.fromMap(data[i], i.toString()));
+                  }
+               }
+               
+               reviews.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+            }
+
+            // Calculate Summary
+            double avgRating = 0;
+            if (reviews.isNotEmpty) {
+               avgRating = reviews.map((e) => e.rating).reduce((a, b) => a + b) / reviews.length;
+            }
+            Map<int, int> ratingDist = {5:0, 4:0, 3:0, 2:0, 1:0};
+            for(var r in reviews) {
+               ratingDist[r.rating] = (ratingDist[r.rating] ?? 0) + 1;
+            }
+
+            return Column(
+              children: [
+                 // Summary Section
+                 if (reviews.isNotEmpty)
+                 Row(
+                   crossAxisAlignment: CrossAxisAlignment.center,
+                   children: [
+                     Column(
+                       children: [
+                         Text("${avgRating.toStringAsFixed(1)}", style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+                         Row(children: List.generate(5, (i) => Icon(i < avgRating.round() ? Icons.star : Icons.star_border, color: ucOrange, size: 16))),
+                         Text("${reviews.length} Reviews", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                       ],
+                     ),
+                     const SizedBox(width: 20),
+                     // Bars
+                     Expanded(
+                       child: Column(
+                         children: [5,4,3,2,1].map((star) {
+                           int count = ratingDist[star] ?? 0;
+                           double pct = reviews.isEmpty ? 0 : count / reviews.length;
+                           return Row(
+                             children: [
+                               Text("$star", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                               const Icon(Icons.star, size: 10, color: Colors.grey),
+                               const SizedBox(width: 5),
+                               Expanded(
+                                 child: LinearProgressIndicator(
+                                   value: pct,
+                                   backgroundColor: Colors.grey[200],
+                                   color: ucOrange,
+                                   minHeight: 5,
+                                   borderRadius: BorderRadius.circular(5),
+                                 )
+                               ),
+                               const SizedBox(width: 5),
+                               Text("($count)", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                             ],
+                           );
+                         }).toList(),
+                       ),
+                     )
+                   ],
+                 ),
+                 
+                 const SizedBox(height: 20),
+                 _buildWriteReviewButton(context),
+                 const SizedBox(height: 20),
+                 
+                 if (reviews.isEmpty)
+                   const Padding(
+                     padding: EdgeInsets.symmetric(vertical: 20),
+                     child: Text("No reviews yet. Be the first to review!", style: TextStyle(color: Colors.grey)),
+                   ),
+
+                 // Reviews List
+                 ...reviews.map((review) => _buildReviewItem(review)).toList(),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWriteReviewButton(BuildContext context) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return const SizedBox.shrink();
+
+      return StreamBuilder(
+        stream: FirebaseDatabase.instance.ref("orders")
+            .orderByChild("buyerId")
+            .equalTo(user.uid)
+            .onValue,
+        builder: (context, snapshot) {
+            bool canReview = false;
+            // Check if user already reviewed? Logic:
+            // For now, allow multiple reviews or assume handled elsewhere.
+            
+            if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+                final ordersValue = snapshot.data!.snapshot.value;
+                Map<dynamic, dynamic> orders = {};
+                if (ordersValue is Map) {
+                   orders = ordersValue;
+                } else if (ordersValue is List) {
+                   // If list (rare for push IDs but possible if using sequential IDs)
+                   for (int i=0; i<ordersValue.length; i++) {
+                      if (ordersValue[i] != null) orders[i] = ordersValue[i];
+                   }
+                }
+
+                for (var v in orders.values) {
+                    final order = v is Map ? v : {};
+                     // Relaxed check: 'Delivered' or 'Completed'
+                     // Also checking 'Pending' just for easy testing if you haven't implemented full order flow
+                     String status = order['status'] ?? '';
+                     if (status == 'Delivered' || status == 'Completed' || status == 'Selesai' || status == 'Pending') { 
+                        if (order['items'] != null && order['items'] is List) {
+                            for(var item in order['items']) {
+                                if (item is Map && item['productId'] == product.id) canReview = true;
+                            }
+                        }
+                     }
+                }
+            }
+            
+            if (!canReview) return const SizedBox.shrink();
+
+            return SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                    onPressed: () {
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => WriteReviewPage(product: product)));
+                    }, 
+                    style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: ucOrange),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                    ),
+                    child: Text("Write a Review", style: TextStyle(color: ucOrange))
+                ),
+            );
+        },
+      );
+  }
+
+  Widget _buildReviewItem(ReviewModel review) {
+      return Container(
+          margin: const EdgeInsets.only(bottom: 15),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade100),
+              borderRadius: BorderRadius.circular(8)
+          ),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                  Row(
+                      children: [
+                          CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.grey[300],
+                              backgroundImage: review.userAvatarUrl != null ? NetworkImage(review.userAvatarUrl!) : null,
+                              child: review.userAvatarUrl == null ? const Icon(Icons.person, size: 20, color: Colors.white) : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    Text(review.isAnonymous ? "Anonymous" : review.userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    Row(children: List.generate(5, (i) => Icon(i < review.rating ? Icons.star : Icons.star_border, color: ucOrange, size: 12))),
+                                ],
+                            ),
+                          ),
+                          Text(DateFormat("dd MMM yyyy").format(DateTime.fromMillisecondsSinceEpoch(review.timestamp)), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (review.title.isNotEmpty) Text(review.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Text(review.reviewText, style: const TextStyle(fontSize: 13)),
+                  if (review.imageUrl != null) ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(review.imageUrl!, height: 100, width: 100, fit: BoxFit.cover),
+                      )
+                  ]
+              ],
+          ),
+      );
   }
 }

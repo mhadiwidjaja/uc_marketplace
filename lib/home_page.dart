@@ -4,7 +4,6 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'chat.dart';
 import 'cart_page.dart';
-import 'category_products_page.dart';
 import 'product_detail_page.dart';
 import 'models/product_model.dart';
 
@@ -19,7 +18,8 @@ class _HomePageState extends State<HomePage> {
   final Color ucOrange = const Color(0xFFF39C12);
   final TextEditingController _searchController = TextEditingController();
   final User? currentUser = FirebaseAuth.instance.currentUser; // Ambil user aktif
-  String _searchQuery = ""; 
+  String _searchQuery = "";
+  String? _selectedCategory; // null means "All" 
 
   String _formatRupiah(String price) {
     try {
@@ -51,7 +51,7 @@ class _HomePageState extends State<HomePage> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: TextField(
                       controller: _searchController,
@@ -63,7 +63,7 @@ class _HomePageState extends State<HomePage> {
                       decoration: InputDecoration(
                         hintText: "Search Products",
                         hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        prefixIcon: Icon(Icons.search, color: ucOrange),
                         suffixIcon: _searchQuery.isNotEmpty 
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 20),
@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
                             ) 
                           : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                       ),
                     ),
                   ),
@@ -152,11 +152,12 @@ class _HomePageState extends State<HomePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                _buildCategoryItem(context, "All", Icons.apps, Colors.blueGrey, null),
                 _buildCategoryItem(context, "Goods", Icons.inventory_2, Colors.purple, "Goods"),
                 _buildCategoryItem(context, "Arts", Icons.brush, Colors.amber, "Arts"),
                 _buildCategoryItem(context, "Fundraising", Icons.volunteer_activism, Colors.cyan, "Fundraising"),
-                _buildCategoryItem(context, "Fashion", Icons.checkroom, Colors.green, "Fashion"),
                 _buildCategoryItem(context, "F&B", Icons.fastfood, Colors.redAccent, "Food"),
+                _buildCategoryItem(context, "Fashion", Icons.checkroom, Colors.green, "Fashion"),
               ],
             ),
           ),
@@ -182,7 +183,13 @@ class _HomePageState extends State<HomePage> {
                   
                   productsMap.forEach((key, value) {
                     final product = ProductModel.fromMap(value, key);
-                    if (_searchQuery.isEmpty || product.name.toLowerCase().contains(_searchQuery)) {
+                    // Filter by search query
+                    bool matchesSearch = _searchQuery.isEmpty || product.name.toLowerCase().contains(_searchQuery);
+                    // Filter by category
+                    bool matchesCategory = _selectedCategory == null || 
+                        product.category?.toLowerCase() == _selectedCategory?.toLowerCase();
+                    
+                    if (matchesSearch && matchesCategory) {
                       productList.add(product);
                     }
                   });
@@ -214,20 +221,38 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Widget Helpers (Category & Product Card) tetap sama seperti sebelumnya...
-  Widget _buildCategoryItem(BuildContext context, String label, IconData icon, Color color, String categoryQuery) {
+  Widget _buildCategoryItem(BuildContext context, String label, IconData icon, Color color, String? categoryQuery) {
+    final bool isSelected = _selectedCategory == categoryQuery;
+    
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryProductsPage(categoryName: categoryQuery)));
+        setState(() {
+          _selectedCategory = categoryQuery;
+        });
       },
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(10),
+              border: isSelected ? Border.all(color: Colors.black, width: 2) : null,
+              boxShadow: isSelected
+                  ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8, spreadRadius: 2)]
+                  : null,
+            ),
             child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 5),
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? ucOrange : Colors.black,
+            ),
+          ),
         ],
       ),
     );

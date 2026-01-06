@@ -17,6 +17,9 @@ class ChatRoomPage extends StatefulWidget {
 class _ChatRoomPageState extends State<ChatRoomPage> {
   final _messageController = TextEditingController();
   final _currentUser = FirebaseAuth.instance.currentUser;
+  String _myName = "User";
+  String? _myProfileUrl;
+  String? _receiverProfileUrl;
 
   String getChatRoomId() {
     List<String> ids = [_currentUser!.uid, widget.receiverId];
@@ -27,7 +30,33 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   @override
   void initState() {
     super.initState();
-    _markAsRead(); // Tandai pesan sudah dibaca saat dibuka
+    _loadUserData();
+    _loadReceiverData();
+    _markAsRead();
+  }
+
+  // Load current user's name and profile from database
+  Future<void> _loadUserData() async {
+    if (_currentUser == null) return;
+    final snapshot = await FirebaseDatabase.instance.ref("users/${_currentUser.uid}").get();
+    if (snapshot.exists && snapshot.value != null) {
+      final userData = snapshot.value as Map;
+      setState(() {
+        _myName = userData['username'] ?? "User";
+        _myProfileUrl = userData['profileImageUrl'];
+      });
+    }
+  }
+
+  // Load receiver's profile picture
+  Future<void> _loadReceiverData() async {
+    final snapshot = await FirebaseDatabase.instance.ref("users/${widget.receiverId}").get();
+    if (snapshot.exists && snapshot.value != null) {
+      final userData = snapshot.value as Map;
+      setState(() {
+        _receiverProfileUrl = userData['profileImageUrl'];
+      });
+    }
   }
 
   void _markAsRead() {
@@ -39,9 +68,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
     final chatRoomId = getChatRoomId();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-    // Ambil Nama Pengirim dari Profile
-    String myName = _currentUser?.displayName ?? "User";
 
     final newMessage = ChatMessage(
       senderId: _currentUser!.uid,
@@ -55,10 +81,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     await ref.child("last_info").set({
       "last_msg": newMessage.message,
       "timestamp": timestamp,
-      "senderId": _currentUser!.uid,
-      "senderName": myName,
+      "senderId": _currentUser.uid,
+      "senderName": _myName,
+      "senderProfileUrl": _myProfileUrl,
       "receiverId": widget.receiverId,
       "receiverName": widget.receiverName,
+      "receiverProfileUrl": _receiverProfileUrl,
       "isRead": false,
     });
 

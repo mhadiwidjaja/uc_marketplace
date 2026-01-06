@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -68,18 +69,30 @@ class _AccountPageState extends State<AccountPage> {
                 displayName = userModel.username;
               }
 
+              // Get profile image URL from snapshot
+              String? profileImageUrl;
+              if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+                final rawData = snapshot.data!.snapshot.value as Map;
+                profileImageUrl = rawData['profileImageUrl'];
+              }
+
               return Container(
                 color: Colors.white,
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    // Avatar Pengguna
+                    // Avatar Pengguna dengan foto profil dari database
                     CircleAvatar(
                       radius: 35,
                       backgroundColor: Colors.grey[300],
-                      backgroundImage: const NetworkImage(
-                        "https://i.pravatar.cc/150?img=5", // Placeholder image
-                      ),
+                      backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                          ? (profileImageUrl.startsWith('data:') 
+                              ? MemoryImage(Uri.parse(profileImageUrl).data!.contentAsBytes()) as ImageProvider
+                              : NetworkImage(profileImageUrl))
+                          : null,
+                      child: profileImageUrl == null || profileImageUrl.isEmpty
+                          ? Icon(Icons.person, size: 35, color: Colors.grey[600])
+                          : null,
                     ),
                     const SizedBox(width: 20),
                     // Informasi Nama dan Email
@@ -143,7 +156,7 @@ class _AccountPageState extends State<AccountPage> {
               child: const Row(
                 children: [
                   Icon(Icons.logout, color: Colors.red),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Text(
                     "Logout",
                     style: TextStyle(

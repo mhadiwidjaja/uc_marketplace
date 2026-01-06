@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart'; // Untuk kIsWeb
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,10 +25,12 @@ class _AddProductPageState extends State<AddProductPage> {
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
+  final _targetSalesController = TextEditingController();
   
-  String? _taxIncluded = 'Yes';
+  final String? _taxIncluded = 'Yes';
   bool _isUnlimitedStock = false;
   bool _isLoading = false;
+  DateTime? _targetDate;
 
   // --- KATEGORI SESUAI HOME PAGE ---
   String _selectedCategory = 'Goods';
@@ -49,6 +52,10 @@ class _AddProductPageState extends State<AddProductPage> {
       _selectedCategory = widget.productToEdit!.category;
       _currentImageUrl = widget.productToEdit!.imageUrl;
       _isUnlimitedStock = widget.productToEdit!.stock >= 999999;
+      _targetSalesController.text = widget.productToEdit!.targetSales.toString();
+      if (widget.productToEdit!.targetDate != null) {
+        _targetDate = DateTime.fromMillisecondsSinceEpoch(widget.productToEdit!.targetDate!);
+      }
     }
   }
 
@@ -89,15 +96,17 @@ class _AddProductPageState extends State<AddProductPage> {
     try {
       // 1. Upload Foto jika ada yang baru dipilih
       if (_webImageBytes != null || _pickedFile != null) {
-        String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-        Reference ref = FirebaseStorage.instance.ref("products/$fileName.jpg");
-        
         if (kIsWeb && _webImageBytes != null) {
-          await ref.putData(_webImageBytes!);
+          // For web: Store image as base64 data URL to avoid CORS issues
+          String base64Image = base64Encode(_webImageBytes!);
+          finalImageUrl = 'data:image/jpeg;base64,$base64Image';
         } else if (_pickedFile != null) {
+          // For mobile: Use Firebase Storage
+          String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+          Reference ref = FirebaseStorage.instance.ref("products/$fileName.jpg");
           await ref.putFile(File(_pickedFile!.path));
+          finalImageUrl = await ref.getDownloadURL();
         }
-        finalImageUrl = await ref.getDownloadURL();
       }
 
       // 2. Siapkan Model
@@ -110,6 +119,9 @@ class _AddProductPageState extends State<AddProductPage> {
         sellerId: user.uid,
         stock: _isUnlimitedStock ? 999999 : (int.tryParse(_stockController.text) ?? 0),
         imageUrl: finalImageUrl,
+        soldCount: widget.productToEdit?.soldCount ?? 0,
+        targetSales: int.tryParse(_targetSalesController.text) ?? 100,
+        targetDate: _targetDate?.millisecondsSinceEpoch,
       );
 
       // 3. Simpan ke Firebase
@@ -186,7 +198,7 @@ class _AddProductPageState extends State<AddProductPage> {
             _buildTextInput("Stock Quantity", _stockController, enabled: !_isUnlimitedStock, isNumber: true),
             Row(
               children: [
-                Switch(value: _isUnlimitedStock, activeColor: ucOrange, onChanged: (v) => setState(() => _isUnlimitedStock = v)),
+                Switch(value: _isUnlimitedStock, activeThumbColor: ucOrange, onChanged: (v) => setState(() => _isUnlimitedStock = v)),
                 const Text("Unlimited Stock"),
               ],
             ),
@@ -195,6 +207,57 @@ class _AddProductPageState extends State<AddProductPage> {
             const Text("Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _buildDropdown(),
+
+            const SizedBox(height: 24),
+            const Text("Sales Target Goal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _buildTextInput("Target sales (e.g. 100)", _targetSalesController, isNumber: true),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _targetDate ?? DateTime.now().add(const Duration(days: 30)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.now(),
+                  );
+                  setState(() {
+                    _targetDate = DateTime(
+                      picked.year,
+                      picked.month,
+                      picked.day,
+                      time?.hour ?? 23,
+                      time?.minute ?? 59,
+                    );
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _targetDate != null
+                          ? "Deadline: ${_targetDate!.day}/${_targetDate!.month}/${_targetDate!.year} ${_targetDate!.hour}:${_targetDate!.minute.toString().padLeft(2, '0')}"
+                          : "Set Target Deadline (Optional)",
+                      style: TextStyle(color: _targetDate != null ? Colors.black : Colors.grey),
+                    ),
+                    Icon(Icons.calendar_today, color: ucOrange),
+                  ],
+                ),
+              ),
+            ),
 
             const SizedBox(height: 30),
             SizedBox(

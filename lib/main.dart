@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'signup_page.dart'; // We will create this file in Step 2
+import 'login_page.dart'; // Changed to LoginPage
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
         primaryColor: const Color(0xFFF39C12),
         useMaterial3: true,
       ),
-      home: const SignupPage(), // This points to the new page we are about to make
+      home: const LoginPage(), // Changed to LoginPage
     );
   }
 }

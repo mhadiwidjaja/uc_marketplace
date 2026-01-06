@@ -121,7 +121,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       const SizedBox(height: 10),
                     ],
                   );
-                }).toList(),
+                }),
 
                 const Divider(height: 30),
 
@@ -267,13 +267,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
         ),
         onPressed: () {
+          String finalAddress = selectedAlamat == "Other" 
+              ? _customAddressController.text.trim() 
+              : (selectedAlamat?.replaceAll('_', ' ') ?? 'Uc Walk');
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => PaymentDetailPage(
                 method: selectedPayment, 
                 totalAmount: total,
-                groupedItems: groupedItems, // Data dikirim ke sini agar split order berhasil
+                groupedItems: groupedItems,
+                pickupAddress: finalAddress,
               ),
             ),
           );
