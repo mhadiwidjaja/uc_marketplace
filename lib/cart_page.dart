@@ -3,8 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:uc_marketplace/checkout_page.dart';
 import 'models/cart_model.dart';
-// Import file checkout kamu nanti di sini:
-// import 'checkout_page.dart'; 
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -52,83 +50,112 @@ class _CartPageState extends State<CartPage> {
     await cartRef.update({'quantity': newQuantity});
   }
 
+  // FIXED: Mengambil data tambahan (Image & Description) dari node products
   Widget _buildCartItem(CartItemModel item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Gambar Produk (Placeholder sesuai desain)
-          Container(
-            width: 85,
-            height: 85,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: const Icon(Icons.smartphone, size: 40, color: Colors.grey),
-          ),
-          const SizedBox(width: 15),
-          // Info Produk
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.productName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  "Type: ProMax\nColor: Gray", // Hardcoded sesuai desain gambar
-                  style: TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _formatCurrency(_parsePrice(item.price)),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-          // Plus Minus Quantity
-          Row(
-            children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.remove_circle_outline, color: Colors.grey),
-                onPressed: () => _updateQuantity(item.productId, item.quantity - 1),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  item.quantity.toString(),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(Icons.add_circle_outline, color: ucOrange),
-                onPressed: () => _updateQuantity(item.productId, item.quantity + 1),
+    return StreamBuilder(
+      stream: FirebaseDatabase.instance.ref("products/${item.productId}").onValue,
+      builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+        String? imageUrl;
+        String description = "Memuat deskripsi...";
+
+        if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+          final prodData = Map<dynamic, dynamic>.from(snapshot.data!.snapshot.value as Map);
+          imageUrl = prodData['imageUrl'];
+          description = prodData['description'] ?? "";
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              // FIXED: Menampilkan Foto Produk dari URL Firebase
+              Container(
+                width: 85,
+                height: 85,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.grey),
+                        ),
+                      )
+                    : const Icon(Icons.inventory_2_outlined, size: 40, color: Colors.grey),
+              ),
+              const SizedBox(width: 15),
+              // Info Produk
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.productName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    // FIXED: Menampilkan deskripsi produk asli dari database
+                    Text(
+                      description,
+                      style: const TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatCurrency(_parsePrice(item.price)),
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              // Plus Minus Quantity
+              Row(
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.remove_circle_outline, color: Colors.grey),
+                    onPressed: () => _updateQuantity(item.productId, item.quantity - 1),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      item.quantity.toString(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(Icons.add_circle_outline, color: ucOrange),
+                    onPressed: () => _updateQuantity(item.productId, item.quantity + 1),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -154,6 +181,7 @@ class _CartPageState extends State<CartPage> {
       body: StreamBuilder(
         stream: FirebaseDatabase.instance.ref("carts/${currentUser!.uid}").onValue,
         builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
           if (!snapshot.hasData || snapshot.data!.snapshot.value == null) return _buildEmptyState();
 
           final Map<dynamic, dynamic> data = snapshot.data!.snapshot.value as Map;
@@ -229,9 +257,9 @@ class _CartPageState extends State<CartPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
-               onPressed: () {
-  Navigator.push(context, MaterialPageRoute(builder: (context) => const CheckoutPage()));
-},
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const CheckoutPage()));
+                },
                 child: const Text(
                   "Check Out",
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan import Auth
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'chat.dart';
@@ -17,9 +17,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final Color ucOrange = const Color(0xFFF39C12);
   final TextEditingController _searchController = TextEditingController();
-  final User? currentUser = FirebaseAuth.instance.currentUser; // Ambil user aktif
+  final User? currentUser = FirebaseAuth.instance.currentUser; 
   String _searchQuery = "";
-  String? _selectedCategory; // null means "All" 
+  String? _selectedCategory; 
 
   String _formatRupiah(String price) {
     try {
@@ -40,7 +40,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
-          // 1. Header with Search Bar & Notification Badges
+          // 1. Header with Search Bar
           Container(
             padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 20),
             decoration: BoxDecoration(color: ucOrange),
@@ -85,61 +85,9 @@ class _HomePageState extends State<HomePage> {
                   child: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 15),
-                
-                // ICON CHAT DENGAN NOTIFIKASI BADGE
                 GestureDetector(
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatPage())),
-                  child: StreamBuilder(
-                    stream: FirebaseDatabase.instance.ref("chats").onValue,
-                    builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
-                      int unreadCount = 0;
-                      
-                      if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
-                        Map<dynamic, dynamic> rooms = snapshot.data!.snapshot.value as Map;
-                        rooms.forEach((key, value) {
-                          var info = value['last_info'];
-                          // Hitung jika user adalah penerima dan status isRead masih false
-                          if (info != null && 
-                              info['receiverId'] == currentUser?.uid && 
-                              info['isRead'] == false) {
-                            unreadCount++;
-                          }
-                        });
-                      }
-
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
-                          if (unreadCount > 0)
-                            Positioned(
-                              right: -2,
-                              top: -2,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red, // Badge Merah
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 14,
-                                  minHeight: 14,
-                                ),
-                                child: Text(
-                                  unreadCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
+                  child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 28),
                 ),
               ],
             ),
@@ -164,7 +112,7 @@ class _HomePageState extends State<HomePage> {
 
           const SizedBox(height: 10),
 
-          // 3. Grid of Items
+          // 3. Grid of Items (STOK FILTER APPLIED HERE)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -183,19 +131,23 @@ class _HomePageState extends State<HomePage> {
                   
                   productsMap.forEach((key, value) {
                     final product = ProductModel.fromMap(value, key);
-                    // Filter by search query
-                    bool matchesSearch = _searchQuery.isEmpty || product.name.toLowerCase().contains(_searchQuery);
-                    // Filter by category
-                    bool matchesCategory = _selectedCategory == null || 
-                        product.category?.toLowerCase() == _selectedCategory?.toLowerCase();
                     
-                    if (matchesSearch && matchesCategory) {
+                    // --- LOGIKA FILTER UTAMA ---
+                    // 1. Cek Pencarian
+                    bool matchesSearch = _searchQuery.isEmpty || product.name.toLowerCase().contains(_searchQuery);
+                    // 2. Cek Kategori
+                    bool matchesCategory = _selectedCategory == null || 
+                        product.category.toLowerCase() == _selectedCategory?.toLowerCase();
+                    // 3. Cek Stok (Hanya tampilkan jika stok > 0 atau Unlimited 999999)
+                    bool hasStock = product.stock > 0 || product.stock >= 999999;
+                    
+                    if (matchesSearch && matchesCategory && hasStock) {
                       productList.add(product);
                     }
                   });
 
                   if (productList.isEmpty) {
-                    return const Center(child: Text("Produk tidak ditemukan"));
+                    return const Center(child: Text("Produk tidak tersedia"));
                   }
 
                   return GridView.builder(
@@ -220,16 +172,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget Helpers (Category & Product Card) tetap sama seperti sebelumnya...
   Widget _buildCategoryItem(BuildContext context, String label, IconData icon, Color color, String? categoryQuery) {
     final bool isSelected = _selectedCategory == categoryQuery;
-    
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedCategory = categoryQuery;
-        });
-      },
+      onTap: () => setState(() => _selectedCategory = categoryQuery),
       child: Column(
         children: [
           Container(
@@ -238,21 +184,11 @@ class _HomePageState extends State<HomePage> {
               color: color,
               borderRadius: BorderRadius.circular(10),
               border: isSelected ? Border.all(color: Colors.black, width: 2) : null,
-              boxShadow: isSelected
-                  ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8, spreadRadius: 2)]
-                  : null,
             ),
             child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? ucOrange : Colors.black,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
         ],
       ),
     );
@@ -260,16 +196,12 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildProductCard(BuildContext context, ProductModel product) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailPage(product: product)));
-      },
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailPage(product: product))),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,11 +216,7 @@ class _HomePageState extends State<HomePage> {
                 child: product.imageUrl != null && product.imageUrl!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                        child: Image.network(
-                          product.imageUrl!, 
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.grey),
-                        ),
+                        child: Image.network(product.imageUrl!, fit: BoxFit.cover),
                       )
                     : const Icon(Icons.inventory_2_outlined, color: Colors.grey, size: 50),
               ),
@@ -298,17 +226,9 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    product.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
-                  Text(
-                    _formatRupiah(product.price), 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)
-                  ),
+                  Text(_formatRupiah(product.price), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)),
                 ],
               ),
             ),

@@ -2,8 +2,9 @@ class UserModel {
   final String uid;
   final String username;
   final String email;
-  final String phoneNumber; // Wajib diisi
-  final String? profileImageUrl; // Opsional, bisa null jika belum upload
+  final String phoneNumber;
+  final String? profileImageUrl;
+  final int walletBalance; // Field baru
 
   UserModel({
     required this.uid,
@@ -11,6 +12,7 @@ class UserModel {
     required this.email,
     required this.phoneNumber,
     this.profileImageUrl,
+    this.walletBalance = 0, // Default 0
   });
 
   factory UserModel.fromMap(Map<dynamic, dynamic> map, String id) {
@@ -20,6 +22,7 @@ class UserModel {
       email: map['email'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
       profileImageUrl: map['profileImageUrl'],
+      walletBalance: map['walletBalance'] ?? 0,
     );
   }
 
@@ -29,6 +32,7 @@ class UserModel {
       'email': email,
       'phoneNumber': phoneNumber,
       'profileImageUrl': profileImageUrl,
+      'walletBalance': walletBalance,
     };
   }
 }
